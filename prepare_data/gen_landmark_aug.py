@@ -29,8 +29,8 @@ def gen_landmark_data(srcTxt, net, augment=False):
         os.makedirs(saveImagesFolder)
     saveF = open(join(saveFolder, "landmark.txt"), 'w')
     imageCnt = 0
-    # image_path bbox landmark(5*2)
-    for (imgPath, bbox, landmarkGt) in getBboxLandmarkFromTxt(srcTxt):
+    # image_path bbox landmark(5*2)   5个关键点
+    for (imgPath, bbox, landmarkGt) in getBboxLandmarkFromTxt(srcTxt):      # 路径，（左上x,左上y,右下x,右下y），[(x1,y1),(),]
         F_imgs = []
         F_landmarks = []        
         img = cv2.imread(imgPath)
@@ -38,14 +38,15 @@ def gen_landmark_data(srcTxt, net, augment=False):
         img_h, img_w, img_c = img.shape
         gt_box = np.array([bbox.left, bbox.top, bbox.right, bbox.bottom])
         f_face = img[bbox.top: bbox.bottom+1, bbox.left: bbox.right+1]
-        f_face = cv2.resize(f_face, (sizeOfNet[net], sizeOfNet[net]))
+        f_face = cv2.resize(f_face, (sizeOfNet[net], sizeOfNet[net]))       # 大小重置
         landmark = np.zeros((5, 2))
         #normalize
-        for index, one in enumerate(landmarkGt):
+        for index, one in enumerate(landmarkGt):        # 5个关键点相对gt 的归一化
             rv = ((one[0]-gt_box[0])/(gt_box[2]-gt_box[0]), (one[1]-gt_box[1])/(gt_box[3]-gt_box[1]))
             landmark[index] = rv
         F_imgs.append(f_face)
         F_landmarks.append(landmark.reshape(10))
+        
         landmark = np.zeros((5, 2))        
         if augment:
             x1, y1, x2, y2 = gt_box
@@ -53,12 +54,12 @@ def gen_landmark_data(srcTxt, net, augment=False):
             gt_w = x2 - x1 + 1
             #gt's height
             gt_h = y2 - y1 + 1        
-            if max(gt_w, gt_h) < 40 or x1 < 0 or y1 < 0:
+            if max(gt_w, gt_h) < 40 or x1 < 0 or y1 < 0:    # 忽略宽、高 小于40像素的
                 continue
             #random shift
-            for i in range(10):
-                bbox_size = np.random.randint(int(min(gt_w, gt_h) * 0.8), np.ceil(1.25 * max(gt_w, gt_h)))
-                delta_x = np.random.randint(-gt_w * 0.2, gt_w * 0.2)
+            for i in range(10):                             #  10个
+                bbox_size = np.random.randint(int(min(gt_w, gt_h) * 0.8), np.ceil(1.25 * max(gt_w, gt_h)))  # 尺寸变换
+                delta_x = np.random.randint(-gt_w * 0.2, gt_w * 0.2)    # 平移
                 delta_y = np.random.randint(-gt_h * 0.2, gt_h * 0.2)
                 nx1 = max(x1+gt_w/2-bbox_size/2+delta_x,0)
                 ny1 = max(y1+gt_h/2-bbox_size/2+delta_y,0)
@@ -75,7 +76,7 @@ def gen_landmark_data(srcTxt, net, augment=False):
                 if iou <= 0.65:
                     continue
                 F_imgs.append(resized_im)
-                #normalize
+                #normalize  关键点的归一化
                 for index, one in enumerate(landmarkGt):
                     rv = ((one[0]-nx1)/bbox_size, (one[1]-ny1)/bbox_size)
                     landmark[index] = rv
@@ -116,6 +117,7 @@ def gen_landmark_data(srcTxt, net, augment=False):
                     F_imgs.append(face_rotated_by_alpha)
                     F_landmarks.append(landmark_rotated.reshape(10))
                 
+                    #flip
                     face_flipped, landmark_flipped = flip(face_rotated_by_alpha, landmark_rotated)
                     face_flipped = cv2.resize(face_flipped, (sizeOfNet[net], sizeOfNet[net]))
                     F_imgs.append(face_flipped)
