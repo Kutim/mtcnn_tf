@@ -9,6 +9,10 @@ from tools.tfrecord_utils import _process_image_withoutcoder, _convert_to_exampl
 import tensorflow as tf
 
 def __iter_all_data(net, iterType):
+    """
+    :param net: 网络名称
+    :param iterType: 'all' 还是 'pos', 'neg', 'part', 'landmark'
+    """
     saveFolder = os.path.join(rootPath, "tmp/data/%s/"%(net))
     if net not in ['pnet', 'rnet', 'onet']:
         raise Exception("The net type error!")
@@ -23,7 +27,7 @@ def __iter_all_data(net, iterType):
             neg = f.readlines()
         with open(os.path.join(saveFolder, 'part.txt'), 'r') as f:
             part = f.readlines()
-        # keep sample ratio [neg, pos, part] = [3, 1, 1]
+        # keep sample ratio [neg, pos, part] = [3, 1, 1]           PNet 样本的比例
         base_num = min([len(neg), len(pos), len(part)])
         if len(neg) > base_num * 3:
             neg_keep = np.random.choice(len(neg), size=base_num * 3, replace=False)
@@ -46,8 +50,14 @@ def __iter_all_data(net, iterType):
         raise Exception("Unsupport iter type.")
 
 def __get_dataset(net, iterType):
+    """
+    
+    :param net: 网络名称
+    :param iterType: 'all' 还是 'pos', 'neg', 'part', 'landmark'
+    : return : 数据集，每条记录 [文件名，类别标签，标记]
+    """
     dataset = []
-    for line in __iter_all_data(net, iterType):
+    for line in __iter_all_data(net, iterType):    # 迭代获取数据
         info = line.strip().split(' ')
         data_example = dict()
         bbox = dict()
@@ -121,10 +131,10 @@ def gen_tfrecords(net, shuffling=False):
     saveFolder = os.path.join(rootPath, "tmp/data/%s/"%(net))
     #tfrecord name 
     if net == 'pnet':
-        tfFileName = os.path.join(saveFolder, "all.tfrecord")
+        tfFileName = os.path.join(saveFolder, "all.tfrecord")       # 一个 tf 文件
         _gen(tfFileName, net, 'all', shuffling)
     elif net in ['rnet', 'onet']:
-        for n in ['pos', 'neg', 'part', 'landmark']:
+        for n in ['pos', 'neg', 'part', 'landmark']:                # 四个 tf 文件
             tfFileName = os.path.join(saveFolder, "%s.tfrecord"%(n))
             _gen(tfFileName, net, n, shuffling)
     # Finally, write the labels file:
