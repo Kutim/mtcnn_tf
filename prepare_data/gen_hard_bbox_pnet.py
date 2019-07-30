@@ -8,13 +8,18 @@ sys.path.insert(0, rootPath)
 from tools.common_utils import IoU
 
 def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
+    """
+    
+    :param srcDataSet: 数据集的路径
+    :param srcAnnotations: 数据集的标注文件，原数据没有找到
+    """
     srcDataSet = os.path.join(rootPath, srcDataSet)
     srcAnnotations = os.path.join(rootPath, srcAnnotations)
     saveFolder = os.path.join(rootPath, "tmp/data/pnet/")
     print(">>>>>> Gen hard samples for pnet...")
     typeName = ["pos", "neg", "part"]
     saveFiles = {}
-    for tp in typeName:
+    for tp in typeName:     # 生成数据存放目录和记录文件
         _saveFolder = os.path.join(saveFolder, tp)
         if not os.path.isdir(_saveFolder):
             os.makedirs(_saveFolder)
@@ -38,46 +43,46 @@ def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
         idx += 1
         height, width, channel = img.shape
 
-        # 1. NEG: random to crop negative sample image
+        # 1. NEG: random to crop negative sample image，产生负样本 50
         negNum = 0
         while negNum < 50:
-            size = np.random.randint(12, min(width, height) / 2)
+            size = np.random.randint(12, min(width, height) / 2)    # 最小 12 像素
             # top_left
-            nx = np.random.randint(0, width - size)
+            nx = np.random.randint(0, width - size)             # 左上角的位置点
             ny = np.random.randint(0, height - size)
             # random crop
             crop_box = np.array([nx, ny, nx + size, ny + size])
             # cal iou and iou must below 0.3 for neg sample
             iou = IoU(crop_box, boxes)
-            if np.max(iou) >= 0.3:
+            if np.max(iou) >= 0.3:      # 负样本的 IoU 要小于 0.3
                 continue
             # crop sample image
             cropped_im = img[ny : ny + size, nx : nx + size, :]
-            resized_im = cv2.resize(cropped_im, (12, 12), interpolation=cv2.INTER_LINEAR)
+            resized_im = cv2.resize(cropped_im, (12, 12), interpolation=cv2.INTER_LINEAR)   # 设置大小为 12*12
             # now to save it
             save_file = os.path.join(saveFolder, "neg", "%s.jpg"%nIdx)
             saveFiles['neg'].write(save_file + ' 0\n')
             cv2.imwrite(save_file, resized_im)
             nIdx += 1
             negNum += 1
-        for box in boxes:
-            # box (x_left, y_top, x_right, y_bottom)
+        for box in boxes:   # 对于标记的处理，产生三类样本
+            # box (x_left, y_top, x_right, y_bottom)   标记为左上，右下的点
             x1, y1, x2, y2 = box
             #bbox's width and height
             w, h = x2 - x1 + 1, y2 - y1 + 1
             # ignore small faces
-            # in case the ground truth boxes of small faces are not accurate
+            # in case the ground truth boxes of small faces are not accurate  忽略宽、高小于 40 像素
             if max(w, h) < 40 or x1 < 0 or y1 < 0:
                 continue
             # 2. NEG: random to crop sample image in bbox inside
-            for i in range(5):
-                size = np.random.randint(12, min(width, height) / 2)
+            for i in range(5):      # 5 个负样本
+                size = np.random.randint(12, min(width, height) / 2)    # 大小
                 # delta_x and delta_y are offsets of (x1, y1)
-                delta_x = np.random.randint(max(-size, -x1), w)
+                delta_x = np.random.randint(max(-size, -x1), w)         # 左上坐标 偏移范围
                 delta_y = np.random.randint(max(-size, -y1), h)
-                nx1 = int(max(0, x1 + delta_x))
+                nx1 = int(max(0, x1 + delta_x))                         # 偏移之后的位置
                 ny1 = int(max(0, y1 + delta_y))
-                if nx1 + size > width or ny1 + size > height:
+                if nx1 + size > width or ny1 + size > height:           # 不能超出
                     continue
                 crop_box = np.array([nx1, ny1, nx1 + size, ny1 + size])
                 Iou = IoU(crop_box, boxes)
@@ -106,7 +111,7 @@ def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
                 if nx2 > width or ny2 > height:
                     continue 
                 crop_box = np.array([nx1, ny1, nx2, ny2])
-                #yu gt de offset
+                #yu gt de offset                                gt 的偏移
                 offset_x1 = (x1 - nx1) / float(size)
                 offset_y1 = (y1 - ny1) / float(size)
                 offset_x2 = (x2 - nx2) / float(size)
