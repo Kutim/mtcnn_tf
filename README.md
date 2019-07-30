@@ -11,7 +11,7 @@ Implement training and testing by tensorflow.
 
 ## Prepare Data and Start Training
 1. WIDER face dataset: Download WIDER_train.zip from [here](http://mmlab.ie.cuhk.edu.hk/projects/WIDERFace/). You can only download Wider Face Training Images. Unzip it and move it to `dataset` folder.
-2. Landmark dataset: Download **train.zip** from [here](http://mmlab.ie.cuhk.edu.hk/archive/CNN_FacePoint.htm). You can only download [training set](http://mmlab.ie.cuhk.edu.hk/archive/CNN/data/train.zip). Unzip it and move it to `dataset` folder.
+2. Landmark dataset: Download **train.zip** from [here](http://mmlab.ie.cuhk.edu.hk/archive/CNN_FacePoint.htm). You can only download [training set](http://mmlab.ie.cuhk.edu.hk/archive/CNN/data/train.zip). Unzip it and move it to `dataset` folder. linux 下注意替换路径分隔符（trainImageList.txt）
 3. Run `./clearAll.sh` to clear all tmp file.
 4. Run `./runAll.sh` to finish all(Include prepare data and training). Please check this shell script to get more info.
 
